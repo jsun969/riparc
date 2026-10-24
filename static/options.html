@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>riparc</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        font: 14px system-ui, sans-serif;
+      }
+      body {
+        margin: 16px;
+        min-width: 280px;
+      }
+      label {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 6px 0;
+      }
+      input {
+        width: 4em;
+      }
+    </style>
+  </head>
+  <body>
+    <label>Tabs to cycle <input id="cycle-size" type="number" step="1" /></label>
+    <label>Shortcut <button id="shortcut" type="button"></button></label>
+    <script type="module" src="options.js"></script>
+  </body>
+</html>

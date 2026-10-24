@@ -1,0 +1,25 @@
+{
+  "manifest_version": 3,
+  "name": "riparc",
+  "version": "0.1.0",
+  "description": "Arc behaviour for Chromium browsers.",
+  "minimum_chrome_version": "121",
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "permissions": ["storage"],
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": false
+  },
+  "commands": {
+    "cycle-recent-tab": {
+      "suggested_key": {
+        "default": "Alt+Q",
+        "mac": "MacCtrl+Q"
+      },
+      "description": "Switch to the next most recently used tab"
+    }
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "title": "riparc",
+  "rules": [
+    {
+      "description": "riparc: Ctrl+Tab cycles recent tabs in Chrome and Edge (sends Ctrl+Q)",
+      "manipulators": [
+        {
+          "type": "basic",
+          "from": {
+            "key_code": "tab",
+            "modifiers": { "mandatory": ["control"], "optional": ["caps_lock"] }
+          },
+          "to": [{ "key_code": "q", "modifiers": ["control"] }],
+          "conditions": [
+            {
+              "type": "frontmost_application_if",
+              "bundle_identifiers": ["^com\\.google\\.Chrome", "^com\\.microsoft\\.edgemac"]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
