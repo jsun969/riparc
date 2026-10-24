@@ -1,6 +1,7 @@
 import { getSettings } from "./settings.js";
 
 const CYCLE_COMMAND = "cycle-recent-tab";
+const CYCLE_REVERSE_COMMAND = "cycle-recent-tab-reverse";
 // Sent by the Karabiner rule whenever Ctrl is released, like letting go of Alt in Alt+Tab.
 const COMMIT_COMMAND = "commit-cycle";
 // Ends a cycle if no press or Ctrl release arrives for this long, in case the
@@ -149,7 +150,8 @@ async function buildOrder(
   return mru.slice(0, size);
 }
 
-async function cycle(s: State, windowId: number, activeTabId: number): Promise<void> {
+// step is 1 to go to older tabs, -1 to go back toward newer ones.
+async function cycle(s: State, windowId: number, activeTabId: number, step: 1 | -1): Promise<void> {
   const { cycleSize, highlightDelayMs, highlightWhileSwitching } = await getSettings();
   if (s.cycle && s.cycle.windowId !== windowId) await finishCycle(s);
   const pressedAgain = s.cycle !== null;
@@ -166,7 +168,7 @@ async function cycle(s: State, windowId: number, activeTabId: number): Promise<v
     };
   }
   const c = s.cycle;
-  c.index = (c.index + 1) % c.order.length;
+  c.index = (((c.index + step) % c.order.length) + c.order.length) % c.order.length;
   c.lastPressAt = Date.now();
   clearTimeout(idleTimer);
   idleTimer = setTimeout(() => void serialize(finishCycle), IDLE_COMMIT_MS);
@@ -189,14 +191,14 @@ chrome.commands.onCommand.addListener((command, tab) => {
     void serialize(finishCycle);
     return;
   }
-  if (command !== CYCLE_COMMAND) return;
+  if (command !== CYCLE_COMMAND && command !== CYCLE_REVERSE_COMMAND) return;
   void serialize(async (s) => {
     const current =
       tab?.id !== undefined
         ? tab
         : (await chrome.tabs.query({ active: true, lastFocusedWindow: true }))[0];
     if (current?.id === undefined) return;
-    await cycle(s, current.windowId, current.id);
+    await cycle(s, current.windowId, current.id, command === CYCLE_COMMAND ? 1 : -1);
   });
 });
 

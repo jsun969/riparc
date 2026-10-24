@@ -6,6 +6,7 @@ Currently one feature: **Ctrl+Tab switches between your most recently used tabs*
 
 - Quick Ctrl+Tab (press and release): switch straight to the previous tab. Do it again to jump back.
 - Hold Ctrl and keep tapping Tab: each tap switches to the next recent tab (5 by default), wrapping back to where you started. While you hold, every tab in that loop is highlighted in the tab strip.
+- Add Shift to go the other way: Ctrl+Shift+Tab steps back toward the newest tab, and from a fresh start it jumps to the oldest tab in the loop.
 - Release Ctrl: you stay on the tab you're on, and the highlight clears.
 
 The highlight appears once you've held Ctrl for the highlight delay (300 ms by default) or tapped Tab a second time, so quick switches never flash it. Recent-tab history is per window. Clicking a tab outside the loop mid-cycle ends the cycle.
@@ -17,6 +18,7 @@ Chromium reserves Ctrl+Tab, so no extension can bind it, and extension shortcuts
 | You press | Karabiner sends | riparc does |
 |---|---|---|
 | Ctrl+Tab | Ctrl+Q | switches to the next recent tab |
+| Ctrl+Shift+Tab | Ctrl+Shift+W | switches the other way through the loop |
 | release Ctrl | Ctrl+Shift+Q | ends the cycle and clears the highlight (ignored when not cycling) |
 
 Without Karabiner you can press Ctrl+Q directly. riparc never hears Ctrl being released then, so a cycle ends 5 seconds after your last press.
@@ -34,11 +36,12 @@ Requires Chrome or Edge 121+, Node, [pnpm](https://pnpm.io), and [just](https://
 
 2. Load the extension: open `chrome://extensions` (or `edge://extensions`), enable **Developer mode**, click **Load unpacked**, and select `dist/`.
 
-3. Check the shortcuts at `chrome://extensions/shortcuts` (or `edge://extensions/shortcuts`). riparc needs both:
+3. Check the shortcuts at `chrome://extensions/shortcuts` (or `edge://extensions/shortcuts`). riparc needs all three:
 
    | Command | Shortcut (macOS) | Elsewhere |
    |---|---|---|
    | Switch to the next most recently used tab | Ctrl+Q | Alt+Q |
+   | Switch to the previous most recently used tab | Ctrl+Shift+W | Alt+Shift+W |
    | End the switch (Karabiner sends this on Ctrl release) | Ctrl+Shift+Q | Alt+Shift+Q |
 
    The browser skips a suggested shortcut if another extension already uses it; set it by hand in that case. The Karabiner rule assumes the macOS defaults above.
@@ -48,7 +51,7 @@ Requires Chrome or Edge 121+, Node, [pnpm](https://pnpm.io), and [just](https://
    1. `just karabiner` copies [`karabiner/riparc.json`](karabiner/riparc.json) to the clipboard.
    2. In Karabiner-Elements: **Settings → Complex Modifications → Add your own rule**, paste, and save.
 
-   To support another Chromium browser, add its bundle identifier to both `bundle_identifiers` lists in the rule.
+   To support another Chromium browser, add its bundle identifier to every `bundle_identifiers` list in the rule.
 
 After changing the source, run `just build` and click reload on riparc's card in the extensions page.
 

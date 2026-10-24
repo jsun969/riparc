@@ -21,6 +21,13 @@
       },
       "description": "Switch to the next most recently used tab"
     },
+    "cycle-recent-tab-reverse": {
+      "suggested_key": {
+        "default": "Alt+Shift+W",
+        "mac": "MacCtrl+Shift+W"
+      },
+      "description": "Switch to the previous most recently used tab"
+    },
     "commit-cycle": {
       "suggested_key": {
         "default": "Alt+Shift+Q",
