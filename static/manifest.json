@@ -19,14 +19,14 @@
         "default": "Alt+Q",
         "mac": "MacCtrl+Q"
       },
-      "description": "Move the highlight to the next most recently used tab"
+      "description": "Switch to the next most recently used tab"
     },
     "commit-cycle": {
       "suggested_key": {
         "default": "Alt+Shift+Q",
         "mac": "MacCtrl+Shift+Q"
       },
-      "description": "Switch to the highlighted tab (Karabiner sends this on Ctrl release)"
+      "description": "End the switch (Karabiner sends this on Ctrl release)"
     }
   }
 }

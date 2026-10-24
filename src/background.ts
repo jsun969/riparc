@@ -3,21 +3,27 @@ import { getSettings } from "./settings.js";
 const CYCLE_COMMAND = "cycle-recent-tab";
 // Sent by the Karabiner rule whenever Ctrl is released, like letting go of Alt in Alt+Tab.
 const COMMIT_COMMAND = "commit-cycle";
+// Ends a cycle if no press or Ctrl release arrives for this long, in case the
+// release signal never comes (Karabiner not running).
+const IDLE_COMMIT_MS = 5000;
 const STATE_KEY = "state";
 
-// While you hold Ctrl and keep pressing the shortcut, the active tab stays put
-// and only a cursor moves through the recent tabs. Releasing Ctrl (or the
-// timeout) switches to the cursor.
+// One hold of Ctrl. Every press switches to the next recent tab right away.
+// A quick tap-and-release never shows anything; if Ctrl is still held after the
+// highlight delay (or Tab is pressed again), every tab in the loop is shown
+// selected. Releasing Ctrl ends the cycle and clears the selection.
 interface Cycle {
   windowId: number;
   // Snapshot of the window's most recent tabs taken when the cycle started.
   // order[0] is the tab the cycle started from.
   order: number[];
-  // Cursor into order: the tab that releasing Ctrl switches to.
+  // Position in order of the tab the last press switched to.
   index: number;
-  expiresAt: number;
-  // Whether the cursor tab is shown as selected in the tab strip.
+  lastPressAt: number;
+  // Whether "Highlight while switching" was on when the cycle started.
   highlight: boolean;
+  // Whether the loop's tabs are currently shown selected.
+  highlightShown: boolean;
 }
 
 interface State {
@@ -30,14 +36,15 @@ interface State {
 // storage.session (survives worker restarts, cleared on browser restart).
 let state: State | null = null;
 let queue: Promise<void> = Promise.resolve();
-let cycleTimer: number | undefined;
+let highlightTimer: number | undefined;
+let idleTimer: number | undefined;
 
 // Event handlers are async; run them one at a time so they never interleave.
 function serialize(task: (s: State) => void | Promise<void>): Promise<void> {
   queue = queue
     .then(async () => {
       const s = await loadState();
-      if (s.cycle && Date.now() >= s.cycle.expiresAt) await finishCycle(s);
+      if (s.cycle && Date.now() - s.cycle.lastPressAt >= IDLE_COMMIT_MS) await finishCycle(s);
       await task(s);
       await chrome.storage.session.set({ [STATE_KEY]: s });
     })
@@ -77,15 +84,38 @@ async function finishCycle(s: State): Promise<void> {
   const cycle = s.cycle;
   if (!cycle) return;
   s.cycle = null;
-  clearTimeout(cycleTimer);
-  const tabs = await chrome.tabs.query({ windowId: cycle.windowId });
-  const cursorId = cycle.order[cycle.index];
-  const target = tabs.find((t) => t.id === cursorId) ?? tabs.find((t) => t.active);
-  if (target?.id === undefined) return;
-  touch(s, cycle.windowId, target.id);
-  // Highlighting a single tab activates it and collapses the selection to it,
-  // so Cmd+W and drags only affect one tab again.
-  await chrome.tabs.highlight({ windowId: cycle.windowId, tabs: target.index });
+  clearTimeout(highlightTimer);
+  clearTimeout(idleTimer);
+  const [active] = await chrome.tabs.query({ active: true, windowId: cycle.windowId });
+  if (active?.id === undefined) return;
+  touch(s, cycle.windowId, active.id);
+  if (!cycle.highlightShown) return;
+  // Drop the rest of the loop from the selection so Cmd+W and drags only affect one tab again.
+  await Promise.allSettled(
+    cycle.order
+      .filter((id) => id !== active.id)
+      .map((id) => chrome.tabs.update(id, { highlighted: false })),
+  );
+}
+
+// Selects every tab in the loop. tabs.highlight activates the first index it is
+// given, so this also switches to activeId.
+async function applyHighlight(c: Cycle, activeId: number): Promise<void> {
+  const tabs = await chrome.tabs.query({ windowId: c.windowId });
+  const indexById = new Map(tabs.map((t) => [t.id, t.index]));
+  const indices = [activeId, ...c.order.filter((id) => id !== activeId)]
+    .map((id) => indexById.get(id))
+    .filter((i) => i !== undefined);
+  c.highlightShown = true;
+  await chrome.tabs.highlight({ windowId: c.windowId, tabs: indices });
+}
+
+// Ctrl is still held after the highlight delay: reveal the loop.
+async function showHighlight(s: State): Promise<void> {
+  const c = s.cycle;
+  if (!c || c.highlightShown) return;
+  const [active] = await chrome.tabs.query({ active: true, windowId: c.windowId });
+  if (active?.id !== undefined) await applyHighlight(c, active.id);
 }
 
 async function dropFromCycle(s: State, windowId: number, tabId: number): Promise<void> {
@@ -120,27 +150,38 @@ async function buildOrder(
 }
 
 async function cycle(s: State, windowId: number, activeTabId: number): Promise<void> {
-  const { cycleSize, cycleTimeoutMs, highlightWhileSwitching } = await getSettings();
+  const { cycleSize, highlightDelayMs, highlightWhileSwitching } = await getSettings();
   if (s.cycle && s.cycle.windowId !== windowId) await finishCycle(s);
+  const pressedAgain = s.cycle !== null;
   if (!s.cycle) {
     const order = await buildOrder(s, windowId, activeTabId, cycleSize);
     if (order.length < 2) return;
-    s.cycle = { windowId, order, index: 0, expiresAt: 0, highlight: highlightWhileSwitching };
+    s.cycle = {
+      windowId,
+      order,
+      index: 0,
+      lastPressAt: 0,
+      highlight: highlightWhileSwitching,
+      highlightShown: false,
+    };
   }
   const c = s.cycle;
   c.index = (c.index + 1) % c.order.length;
-  c.expiresAt = Date.now() + cycleTimeoutMs;
-  clearTimeout(cycleTimer);
-  cycleTimer = setTimeout(() => void serialize(finishCycle), cycleTimeoutMs);
-  if (!c.highlight) return;
-  const tabs = await chrome.tabs.query({ windowId });
-  const active = tabs.find((t) => t.active);
-  const cursor = tabs.find((t) => t.id === c.order[c.index]);
-  if (!active || !cursor) return;
-  // tabs.highlight activates the first index it is given, so listing the
-  // active tab first keeps it active and gives the cursor the selected tint.
-  const indices = cursor.id === active.id ? [active.index] : [active.index, cursor.index];
-  await chrome.tabs.highlight({ windowId, tabs: indices });
+  c.lastPressAt = Date.now();
+  clearTimeout(idleTimer);
+  idleTimer = setTimeout(() => void serialize(finishCycle), IDLE_COMMIT_MS);
+  const target = c.order[c.index];
+  if (target === undefined) return;
+  if (c.highlight && (c.highlightShown || pressedAgain)) {
+    clearTimeout(highlightTimer);
+    await applyHighlight(c, target);
+    return;
+  }
+  await chrome.tabs.update(target, { active: true });
+  if (c.highlight) {
+    clearTimeout(highlightTimer);
+    highlightTimer = setTimeout(() => void serialize(showHighlight), highlightDelayMs);
+  }
 }
 
 chrome.commands.onCommand.addListener((command, tab) => {
@@ -162,10 +203,12 @@ chrome.commands.onCommand.addListener((command, tab) => {
 chrome.tabs.onActivated.addListener(({ tabId, windowId }) => {
   void serialize((s) => {
     if (s.cycle?.windowId === windowId) {
-      if (tabId === s.cycle.order[0]) return;
-      // You switched tabs some other way mid-cycle (click, tab closed); that wins.
+      // Our own switches; whichever loop tab is active gets recorded when Ctrl is released.
+      if (s.cycle.order.includes(tabId)) return;
+      // You switched to a tab outside the loop some other way (click, tab closed); that wins.
       s.cycle = null;
-      clearTimeout(cycleTimer);
+      clearTimeout(highlightTimer);
+      clearTimeout(idleTimer);
     }
     touch(s, windowId, tabId);
   });

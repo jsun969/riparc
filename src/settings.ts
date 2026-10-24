@@ -1,14 +1,14 @@
 export interface Settings {
   // How many of the most recently visited tabs one cycle loops through.
   cycleSize: number;
-  // Switch to the highlighted tab if no Ctrl release arrives for this long
-  // after the last press (safety net for when Karabiner isn't running).
-  cycleTimeoutMs: number;
-  // Show the tab you're about to switch to as selected in the tab strip.
+  // How long Ctrl must stay held after the first press before the loop's tabs
+  // are highlighted. Quicker taps just switch to the previous tab.
+  highlightDelayMs: number;
+  // Show every tab in the loop as selected while holding Ctrl.
   highlightWhileSwitching: boolean;
 }
 
-export type NumberSettingKey = "cycleSize" | "cycleTimeoutMs";
+export type NumberSettingKey = "cycleSize" | "highlightDelayMs";
 
 export interface NumberBounds {
   min: number;
@@ -18,13 +18,13 @@ export interface NumberBounds {
 
 export const DEFAULT_SETTINGS: Settings = {
   cycleSize: 5,
-  cycleTimeoutMs: 1500,
+  highlightDelayMs: 300,
   highlightWhileSwitching: true,
 };
 
 export const NUMBER_BOUNDS: Record<NumberSettingKey, NumberBounds> = {
   cycleSize: { min: 2, max: 20, step: 1 },
-  cycleTimeoutMs: { min: 100, max: 5000, step: 50 },
+  highlightDelayMs: { min: 0, max: 2000, step: 50 },
 };
 
 function clamp(key: NumberSettingKey, value: unknown): number {
@@ -38,7 +38,7 @@ export async function getSettings(): Promise<Settings> {
   const stored = await chrome.storage.sync.get<Settings>(DEFAULT_SETTINGS);
   return {
     cycleSize: clamp("cycleSize", stored.cycleSize),
-    cycleTimeoutMs: clamp("cycleTimeoutMs", stored.cycleTimeoutMs),
+    highlightDelayMs: clamp("highlightDelayMs", stored.highlightDelayMs),
     highlightWhileSwitching: Boolean(stored.highlightWhileSwitching),
   };
 }
