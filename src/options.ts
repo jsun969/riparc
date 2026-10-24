@@ -25,12 +25,3 @@ highlightInput.checked = settings.highlightWhileSwitching;
 highlightInput.addEventListener("change", () => {
   void setHighlightWhileSwitching(highlightInput.checked);
 });
-
-const shortcutButton = document.querySelector<HTMLButtonElement>("#shortcut")!;
-const commands = await chrome.commands.getAll();
-shortcutButton.textContent =
-  commands.find((c) => c.name === "cycle-recent-tab")?.shortcut || "Not set";
-shortcutButton.addEventListener("click", () => {
-  const scheme = navigator.userAgent.includes(" Edg/") ? "edge" : "chrome";
-  void chrome.tabs.create({ url: `${scheme}://extensions/shortcuts` });
-});

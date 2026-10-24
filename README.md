@@ -44,7 +44,7 @@ Requires Chrome or Edge 121+, Node, [pnpm](https://pnpm.io), and [just](https://
    | Switch to the previous most recently used tab | Ctrl+Shift+W | Alt+Shift+W |
    | End the switch (Karabiner sends this on Ctrl release) | Ctrl+Shift+Q | Alt+Shift+Q |
 
-   The browser skips a suggested shortcut if another extension already uses it; set it by hand in that case. The Karabiner rule assumes the macOS defaults above.
+   The Karabiner rule sends exactly these keys, so leave them as they are. The browser always lets you edit extension shortcuts on that page; extensions can't lock them. It also skips a suggested shortcut if another extension already uses it; set it by hand in that case.
 
 4. Add the Karabiner rule (macOS):
 
@@ -64,7 +64,6 @@ Open riparc's **Extension options** from its card in the extensions page.
 | Tabs to cycle | 5 | How many recent tabs one cycle loops through (2 to 20) |
 | Highlight delay (ms) | 300 | How long Ctrl must stay held after the first press before the loop is highlighted (0 to 2000) |
 | Highlight while switching | on | Highlight the loop's tabs while holding Ctrl |
-| Shortcut | | Shows the current shortcut; click to open the browser's shortcut page |
 
 ## Commands
 
