@@ -4,43 +4,53 @@ export interface Settings {
   // A cycle ends once no shortcut press arrives for this long; the tab you
   // landed on then becomes the most recent one.
   cycleTimeoutMs: number;
+  // Multi-select the cycle's tabs in the tab strip while switching.
+  highlightWhileSwitching: boolean;
 }
 
 export type SettingKey = keyof Settings;
+export type NumberSettingKey = "cycleSize" | "cycleTimeoutMs";
 
-export interface SettingBounds {
-  default: number;
+export interface NumberBounds {
   min: number;
   max: number;
   step: number;
 }
 
-export const SETTING_BOUNDS: Record<SettingKey, SettingBounds> = {
-  cycleSize: { default: 5, min: 2, max: 20, step: 1 },
-  cycleTimeoutMs: { default: 700, min: 100, max: 5000, step: 50 },
+export const DEFAULT_SETTINGS: Settings = {
+  cycleSize: 5,
+  cycleTimeoutMs: 700,
+  highlightWhileSwitching: true,
 };
 
-function clamp(key: SettingKey, value: unknown): number {
-  const { default: fallback, min, max } = SETTING_BOUNDS[key];
+export const NUMBER_BOUNDS: Record<NumberSettingKey, NumberBounds> = {
+  cycleSize: { min: 2, max: 20, step: 1 },
+  cycleTimeoutMs: { min: 100, max: 5000, step: 50 },
+};
+
+function clamp(key: NumberSettingKey, value: unknown): number {
+  const { min, max } = NUMBER_BOUNDS[key];
   const n = Number(value);
-  if (!Number.isFinite(n)) return fallback;
+  if (!Number.isFinite(n)) return DEFAULT_SETTINGS[key];
   return Math.min(max, Math.max(min, Math.round(n)));
 }
 
 export async function getSettings(): Promise<Settings> {
-  const stored = await chrome.storage.sync.get({
-    cycleSize: SETTING_BOUNDS.cycleSize.default,
-    cycleTimeoutMs: SETTING_BOUNDS.cycleTimeoutMs.default,
-  });
+  const stored = await chrome.storage.sync.get<Settings>(DEFAULT_SETTINGS);
   return {
     cycleSize: clamp("cycleSize", stored.cycleSize),
     cycleTimeoutMs: clamp("cycleTimeoutMs", stored.cycleTimeoutMs),
+    highlightWhileSwitching: Boolean(stored.highlightWhileSwitching),
   };
 }
 
 // Stores the clamped value and returns it.
-export async function setSetting(key: SettingKey, value: number): Promise<number> {
+export async function setNumberSetting(key: NumberSettingKey, value: number): Promise<number> {
   const clamped = clamp(key, value);
   await chrome.storage.sync.set({ [key]: clamped });
   return clamped;
+}
+
+export async function setHighlightWhileSwitching(enabled: boolean): Promise<void> {
+  await chrome.storage.sync.set({ highlightWhileSwitching: enabled });
 }

@@ -1,18 +1,30 @@
-import { SETTING_BOUNDS, type SettingKey, getSettings, setSetting } from "./settings.js";
+import {
+  NUMBER_BOUNDS,
+  type NumberSettingKey,
+  getSettings,
+  setHighlightWhileSwitching,
+  setNumberSetting,
+} from "./settings.js";
 
 const settings = await getSettings();
 
 for (const input of document.querySelectorAll<HTMLInputElement>("input[data-setting]")) {
-  const key = input.dataset.setting as SettingKey;
-  const { min, max, step } = SETTING_BOUNDS[key];
+  const key = input.dataset.setting as NumberSettingKey;
+  const { min, max, step } = NUMBER_BOUNDS[key];
   input.min = String(min);
   input.max = String(max);
   input.step = String(step);
   input.value = String(settings[key]);
   input.addEventListener("change", async () => {
-    input.value = String(await setSetting(key, input.valueAsNumber));
+    input.value = String(await setNumberSetting(key, input.valueAsNumber));
   });
 }
+
+const highlightInput = document.querySelector<HTMLInputElement>("#highlight")!;
+highlightInput.checked = settings.highlightWhileSwitching;
+highlightInput.addEventListener("change", () => {
+  void setHighlightWhileSwitching(highlightInput.checked);
+});
 
 const shortcutButton = document.querySelector<HTMLButtonElement>("#shortcut")!;
 const commands = await chrome.commands.getAll();
