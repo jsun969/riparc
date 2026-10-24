@@ -7,7 +7,7 @@
         "key_code": "tab",
         "modifiers": { "mandatory": ["control"], "optional": ["caps_lock"] }
       },
-      "to": [{ "key_code": "q", "modifiers": ["left_control"] }],
+      "to": [{ "key_code": "q", "modifiers": ["left_control"] }, { "key_code": "vk_none" }],
       "conditions": [
         {
           "type": "frontmost_application_if",
