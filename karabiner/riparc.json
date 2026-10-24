@@ -1,46 +1,41 @@
 {
-  "title": "riparc",
-  "rules": [
+  "description": "riparc: Ctrl+Tab cycles recent tabs in Chrome and Edge, releasing Ctrl switches",
+  "manipulators": [
     {
-      "description": "riparc: Ctrl+Tab cycles recent tabs in Chrome and Edge, releasing Ctrl switches",
-      "manipulators": [
+      "type": "basic",
+      "from": {
+        "key_code": "tab",
+        "modifiers": { "mandatory": ["control"], "optional": ["caps_lock"] }
+      },
+      "to": [{ "key_code": "q", "modifiers": ["left_control"] }],
+      "conditions": [
         {
-          "type": "basic",
-          "from": {
-            "key_code": "tab",
-            "modifiers": { "mandatory": ["control"], "optional": ["caps_lock"] }
-          },
-          "to": [{ "key_code": "q", "modifiers": ["left_control"] }],
-          "conditions": [
-            {
-              "type": "frontmost_application_if",
-              "bundle_identifiers": ["^com\\.google\\.Chrome", "^com\\.microsoft\\.edgemac"]
-            }
-          ]
-        },
+          "type": "frontmost_application_if",
+          "bundle_identifiers": ["^com\\.google\\.Chrome", "^com\\.microsoft\\.edgemac"]
+        }
+      ]
+    },
+    {
+      "type": "basic",
+      "from": { "key_code": "left_control", "modifiers": { "optional": ["any"] } },
+      "to": [{ "key_code": "left_control" }],
+      "to_after_key_up": [{ "key_code": "q", "modifiers": ["left_control", "left_shift"] }],
+      "conditions": [
         {
-          "type": "basic",
-          "from": { "key_code": "left_control", "modifiers": { "optional": ["any"] } },
-          "to": [{ "key_code": "left_control" }],
-          "to_after_key_up": [{ "key_code": "q", "modifiers": ["left_control", "left_shift"] }],
-          "conditions": [
-            {
-              "type": "frontmost_application_if",
-              "bundle_identifiers": ["^com\\.google\\.Chrome", "^com\\.microsoft\\.edgemac"]
-            }
-          ]
-        },
+          "type": "frontmost_application_if",
+          "bundle_identifiers": ["^com\\.google\\.Chrome", "^com\\.microsoft\\.edgemac"]
+        }
+      ]
+    },
+    {
+      "type": "basic",
+      "from": { "key_code": "right_control", "modifiers": { "optional": ["any"] } },
+      "to": [{ "key_code": "right_control" }],
+      "to_after_key_up": [{ "key_code": "q", "modifiers": ["left_control", "left_shift"] }],
+      "conditions": [
         {
-          "type": "basic",
-          "from": { "key_code": "right_control", "modifiers": { "optional": ["any"] } },
-          "to": [{ "key_code": "right_control" }],
-          "to_after_key_up": [{ "key_code": "q", "modifiers": ["left_control", "left_shift"] }],
-          "conditions": [
-            {
-              "type": "frontmost_application_if",
-              "bundle_identifiers": ["^com\\.google\\.Chrome", "^com\\.microsoft\\.edgemac"]
-            }
-          ]
+          "type": "frontmost_application_if",
+          "bundle_identifiers": ["^com\\.google\\.Chrome", "^com\\.microsoft\\.edgemac"]
         }
       ]
     }

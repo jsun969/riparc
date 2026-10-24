@@ -27,7 +27,6 @@ clean:
 zip: clean build
     cd dist && zip -qr ../riparc.zip .
 
-# Install the Karabiner rule that maps Ctrl+Tab to the riparc shortcut (enable it in Karabiner-Elements afterwards)
+# Copy the Karabiner rule to the clipboard, ready to paste into "Add your own rule"
 karabiner:
-    mkdir -p ~/.config/karabiner/assets/complex_modifications
-    cp karabiner/riparc.json ~/.config/karabiner/assets/complex_modifications/riparc.json
+    pbcopy < karabiner/riparc.json
