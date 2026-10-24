@@ -1,17 +1,23 @@
 import { getSettings } from "./settings.js";
 
-const COMMAND = "cycle-recent-tab";
+const CYCLE_COMMAND = "cycle-recent-tab";
+// Sent by the Karabiner rule whenever Ctrl is released, like letting go of Alt in Alt+Tab.
+const COMMIT_COMMAND = "commit-cycle";
 const STATE_KEY = "state";
 
+// While you hold Ctrl and keep pressing the shortcut, the active tab stays put
+// and only a cursor moves through the recent tabs. Releasing Ctrl (or the
+// timeout) switches to the cursor.
 interface Cycle {
   windowId: number;
   // Snapshot of the window's most recent tabs taken when the cycle started.
   // order[0] is the tab the cycle started from.
   order: number[];
+  // Cursor into order: the tab that releasing Ctrl switches to.
   index: number;
   expiresAt: number;
-  // Whether this cycle multi-selected its tabs, so finishing knows to clear them.
-  highlighted: boolean;
+  // Whether the cursor tab is shown as selected in the tab strip.
+  highlight: boolean;
 }
 
 interface State {
@@ -72,18 +78,14 @@ async function finishCycle(s: State): Promise<void> {
   if (!cycle) return;
   s.cycle = null;
   clearTimeout(cycleTimer);
-  // Use the tab that is actually active, in case the user clicked a tab mid-cycle.
-  const [active] = await chrome.tabs.query({ active: true, windowId: cycle.windowId });
-  if (active?.id === undefined) return;
-  touch(s, cycle.windowId, active.id);
-  if (cycle.highlighted) {
-    // Drop the rest of the cycle from the selection so Cmd+W and drags only affect one tab again.
-    await Promise.allSettled(
-      cycle.order
-        .filter((id) => id !== active.id)
-        .map((id) => chrome.tabs.update(id, { highlighted: false })),
-    );
-  }
+  const tabs = await chrome.tabs.query({ windowId: cycle.windowId });
+  const cursorId = cycle.order[cycle.index];
+  const target = tabs.find((t) => t.id === cursorId) ?? tabs.find((t) => t.active);
+  if (target?.id === undefined) return;
+  touch(s, cycle.windowId, target.id);
+  // Highlighting a single tab activates it and collapses the selection to it,
+  // so Cmd+W and drags only affect one tab again.
+  await chrome.tabs.highlight({ windowId: cycle.windowId, tabs: target.index });
 }
 
 async function dropFromCycle(s: State, windowId: number, tabId: number): Promise<void> {
@@ -123,29 +125,30 @@ async function cycle(s: State, windowId: number, activeTabId: number): Promise<v
   if (!s.cycle) {
     const order = await buildOrder(s, windowId, activeTabId, cycleSize);
     if (order.length < 2) return;
-    s.cycle = { windowId, order, index: 0, expiresAt: 0, highlighted: highlightWhileSwitching };
+    s.cycle = { windowId, order, index: 0, expiresAt: 0, highlight: highlightWhileSwitching };
   }
   const c = s.cycle;
   c.index = (c.index + 1) % c.order.length;
   c.expiresAt = Date.now() + cycleTimeoutMs;
   clearTimeout(cycleTimer);
   cycleTimer = setTimeout(() => void serialize(finishCycle), cycleTimeoutMs);
-  const target = c.order[c.index];
-  if (target === undefined) return;
-  if (!c.highlighted) {
-    await chrome.tabs.update(target, { active: true });
-    return;
-  }
-  // tabs.highlight takes tab positions and activates the first one given.
-  const indexById = new Map((await chrome.tabs.query({ windowId })).map((t) => [t.id, t.index]));
-  const indices = [target, ...c.order.filter((id) => id !== target)]
-    .map((id) => indexById.get(id))
-    .filter((i) => i !== undefined);
+  if (!c.highlight) return;
+  const tabs = await chrome.tabs.query({ windowId });
+  const active = tabs.find((t) => t.active);
+  const cursor = tabs.find((t) => t.id === c.order[c.index]);
+  if (!active || !cursor) return;
+  // tabs.highlight activates the first index it is given, so listing the
+  // active tab first keeps it active and gives the cursor the selected tint.
+  const indices = cursor.id === active.id ? [active.index] : [active.index, cursor.index];
   await chrome.tabs.highlight({ windowId, tabs: indices });
 }
 
 chrome.commands.onCommand.addListener((command, tab) => {
-  if (command !== COMMAND) return;
+  if (command === COMMIT_COMMAND) {
+    void serialize(finishCycle);
+    return;
+  }
+  if (command !== CYCLE_COMMAND) return;
   void serialize(async (s) => {
     const current =
       tab?.id !== undefined
@@ -158,8 +161,12 @@ chrome.commands.onCommand.addListener((command, tab) => {
 
 chrome.tabs.onActivated.addListener(({ tabId, windowId }) => {
   void serialize((s) => {
-    // Activations during a cycle are ours; the landing tab is recorded when the cycle ends.
-    if (s.cycle?.windowId === windowId) return;
+    if (s.cycle?.windowId === windowId) {
+      if (tabId === s.cycle.order[0]) return;
+      // You switched tabs some other way mid-cycle (click, tab closed); that wins.
+      s.cycle = null;
+      clearTimeout(cycleTimer);
+    }
     touch(s, windowId, tabId);
   });
 });

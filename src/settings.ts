@@ -1,14 +1,13 @@
 export interface Settings {
   // How many of the most recently visited tabs one cycle loops through.
   cycleSize: number;
-  // A cycle ends once no shortcut press arrives for this long; the tab you
-  // landed on then becomes the most recent one.
+  // Switch to the highlighted tab if no Ctrl release arrives for this long
+  // after the last press (safety net for when Karabiner isn't running).
   cycleTimeoutMs: number;
-  // Multi-select the cycle's tabs in the tab strip while switching.
+  // Show the tab you're about to switch to as selected in the tab strip.
   highlightWhileSwitching: boolean;
 }
 
-export type SettingKey = keyof Settings;
 export type NumberSettingKey = "cycleSize" | "cycleTimeoutMs";
 
 export interface NumberBounds {
@@ -19,7 +18,7 @@ export interface NumberBounds {
 
 export const DEFAULT_SETTINGS: Settings = {
   cycleSize: 5,
-  cycleTimeoutMs: 700,
+  cycleTimeoutMs: 1500,
   highlightWhileSwitching: true,
 };
 
