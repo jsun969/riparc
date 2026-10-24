@@ -1,19 +1,46 @@
-export const DEFAULT_CYCLE_SIZE = 5;
-export const MIN_CYCLE_SIZE = 2;
-export const MAX_CYCLE_SIZE = 20;
-
-export function clampCycleSize(value: number): number {
-  if (!Number.isFinite(value)) return DEFAULT_CYCLE_SIZE;
-  return Math.min(MAX_CYCLE_SIZE, Math.max(MIN_CYCLE_SIZE, Math.round(value)));
+export interface Settings {
+  // How many of the most recently visited tabs one cycle loops through.
+  cycleSize: number;
+  // A cycle ends once no shortcut press arrives for this long; the tab you
+  // landed on then becomes the most recent one.
+  cycleTimeoutMs: number;
 }
 
-export async function getCycleSize(): Promise<number> {
-  const { cycleSize } = await chrome.storage.sync.get({ cycleSize: DEFAULT_CYCLE_SIZE });
-  return clampCycleSize(Number(cycleSize));
+export type SettingKey = keyof Settings;
+
+export interface SettingBounds {
+  default: number;
+  min: number;
+  max: number;
+  step: number;
 }
 
-export async function setCycleSize(value: number): Promise<number> {
-  const cycleSize = clampCycleSize(value);
-  await chrome.storage.sync.set({ cycleSize });
-  return cycleSize;
+export const SETTING_BOUNDS: Record<SettingKey, SettingBounds> = {
+  cycleSize: { default: 5, min: 2, max: 20, step: 1 },
+  cycleTimeoutMs: { default: 700, min: 100, max: 5000, step: 50 },
+};
+
+function clamp(key: SettingKey, value: unknown): number {
+  const { default: fallback, min, max } = SETTING_BOUNDS[key];
+  const n = Number(value);
+  if (!Number.isFinite(n)) return fallback;
+  return Math.min(max, Math.max(min, Math.round(n)));
+}
+
+export async function getSettings(): Promise<Settings> {
+  const stored = await chrome.storage.sync.get({
+    cycleSize: SETTING_BOUNDS.cycleSize.default,
+    cycleTimeoutMs: SETTING_BOUNDS.cycleTimeoutMs.default,
+  });
+  return {
+    cycleSize: clamp("cycleSize", stored.cycleSize),
+    cycleTimeoutMs: clamp("cycleTimeoutMs", stored.cycleTimeoutMs),
+  };
+}
+
+// Stores the clamped value and returns it.
+export async function setSetting(key: SettingKey, value: number): Promise<number> {
+  const clamped = clamp(key, value);
+  await chrome.storage.sync.set({ [key]: clamped });
+  return clamped;
 }

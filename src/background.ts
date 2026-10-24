@@ -1,9 +1,6 @@
-import { getCycleSize } from "./settings.js";
+import { getSettings } from "./settings.js";
 
 const COMMAND = "cycle-recent-tab";
-// A cycle ends once no shortcut press arrives for this long; the tab you
-// landed on then becomes the most recent one.
-const CYCLE_TIMEOUT_MS = 700;
 const STATE_KEY = "state";
 
 interface Cycle {
@@ -90,7 +87,12 @@ async function dropFromCycle(s: State, windowId: number, tabId: number): Promise
 
 // The most recent tabs in the window, reconciled against the tabs that
 // actually exist, starting with the active tab.
-async function buildOrder(s: State, windowId: number, activeTabId: number): Promise<number[]> {
+async function buildOrder(
+  s: State,
+  windowId: number,
+  activeTabId: number,
+  size: number,
+): Promise<number[]> {
   const tabs = await chrome.tabs.query({ windowId });
   const live = new Set(tabs.map((t) => t.id));
   const known = (s.mru[windowId] ?? []).filter((id) => live.has(id));
@@ -101,21 +103,22 @@ async function buildOrder(s: State, windowId: number, activeTabId: number): Prom
     .map((t) => t.id as number);
   const mru = [activeTabId, ...[...known, ...unknown].filter((id) => id !== activeTabId)];
   s.mru[windowId] = mru;
-  return mru.slice(0, await getCycleSize());
+  return mru.slice(0, size);
 }
 
 async function cycle(s: State, windowId: number, activeTabId: number): Promise<void> {
+  const { cycleSize, cycleTimeoutMs } = await getSettings();
   if (s.cycle && s.cycle.windowId !== windowId) await finishCycle(s);
   if (!s.cycle) {
-    const order = await buildOrder(s, windowId, activeTabId);
+    const order = await buildOrder(s, windowId, activeTabId, cycleSize);
     if (order.length < 2) return;
     s.cycle = { windowId, order, index: 0, expiresAt: 0 };
   }
   const c = s.cycle;
   c.index = (c.index + 1) % c.order.length;
-  c.expiresAt = Date.now() + CYCLE_TIMEOUT_MS;
+  c.expiresAt = Date.now() + cycleTimeoutMs;
   clearTimeout(cycleTimer);
-  cycleTimer = setTimeout(() => void serialize(finishCycle), CYCLE_TIMEOUT_MS);
+  cycleTimer = setTimeout(() => void serialize(finishCycle), cycleTimeoutMs);
   const target = c.order[c.index];
   if (target !== undefined) await chrome.tabs.update(target, { active: true });
 }

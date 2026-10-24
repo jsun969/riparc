@@ -20,12 +20,13 @@
         padding: 6px 0;
       }
       input {
-        width: 4em;
+        width: 5em;
       }
     </style>
   </head>
   <body>
-    <label>Tabs to cycle <input id="cycle-size" type="number" step="1" /></label>
+    <label>Tabs to cycle <input data-setting="cycleSize" type="number" /></label>
+    <label>Switch timeout (ms) <input data-setting="cycleTimeoutMs" type="number" /></label>
     <label>Shortcut <button id="shortcut" type="button"></button></label>
     <script type="module" src="options.js"></script>
   </body>

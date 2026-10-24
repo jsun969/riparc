@@ -1,15 +1,20 @@
-import { MAX_CYCLE_SIZE, MIN_CYCLE_SIZE, getCycleSize, setCycleSize } from "./settings.js";
+import { SETTING_BOUNDS, type SettingKey, getSettings, setSetting } from "./settings.js";
 
-const sizeInput = document.querySelector<HTMLInputElement>("#cycle-size")!;
+const settings = await getSettings();
+
+for (const input of document.querySelectorAll<HTMLInputElement>("input[data-setting]")) {
+  const key = input.dataset.setting as SettingKey;
+  const { min, max, step } = SETTING_BOUNDS[key];
+  input.min = String(min);
+  input.max = String(max);
+  input.step = String(step);
+  input.value = String(settings[key]);
+  input.addEventListener("change", async () => {
+    input.value = String(await setSetting(key, input.valueAsNumber));
+  });
+}
+
 const shortcutButton = document.querySelector<HTMLButtonElement>("#shortcut")!;
-
-sizeInput.min = String(MIN_CYCLE_SIZE);
-sizeInput.max = String(MAX_CYCLE_SIZE);
-sizeInput.value = String(await getCycleSize());
-sizeInput.addEventListener("change", async () => {
-  sizeInput.value = String(await setCycleSize(sizeInput.valueAsNumber));
-});
-
 const commands = await chrome.commands.getAll();
 shortcutButton.textContent =
   commands.find((c) => c.name === "cycle-recent-tab")?.shortcut || "Not set";
