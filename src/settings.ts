@@ -9,10 +9,12 @@ export interface Settings {
   // Shift+click on a link opens it in a peek popup instead of a new window.
   // peek-content.ts reads this key directly; keep the name and default in sync.
   peekEnabled: boolean;
+  // Close a peek as soon as another window (or app) takes focus.
+  peekCloseOnBlur: boolean;
 }
 
 export type NumberSettingKey = "cycleSize" | "highlightDelayMs";
-export type BooleanSettingKey = "highlightWhileSwitching" | "peekEnabled";
+export type BooleanSettingKey = "highlightWhileSwitching" | "peekEnabled" | "peekCloseOnBlur";
 
 export interface NumberBounds {
   min: number;
@@ -25,6 +27,7 @@ export const DEFAULT_SETTINGS: Settings = {
   highlightDelayMs: 300,
   highlightWhileSwitching: true,
   peekEnabled: true,
+  peekCloseOnBlur: true,
 };
 
 export const NUMBER_BOUNDS: Record<NumberSettingKey, NumberBounds> = {
@@ -46,6 +49,7 @@ export async function getSettings(): Promise<Settings> {
     highlightDelayMs: clamp("highlightDelayMs", stored.highlightDelayMs),
     highlightWhileSwitching: Boolean(stored.highlightWhileSwitching),
     peekEnabled: Boolean(stored.peekEnabled),
+    peekCloseOnBlur: Boolean(stored.peekCloseOnBlur),
   };
 }
 

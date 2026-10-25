@@ -1,6 +1,9 @@
+import { getSettings } from "./settings.js";
+
 // Peek: Shift+click on a link opens it in a temporary popup window centred over
-// the current window. The popup closes as soon as it loses focus, or on Esc.
-// Cmd+O reopens the page as a real tab next to the tab the peek came from.
+// the current window. The popup closes on Esc, and (by default) as soon as it
+// loses focus. Cmd+O reopens the page as a real tab next to the tab the peek
+// came from.
 
 const PEEKS_KEY = "peeks";
 // Peek size relative to the window it was opened from.
@@ -107,6 +110,7 @@ chrome.commands.onCommand.addListener((command, tab) => {
 
 chrome.windows.onFocusChanged.addListener((focusedWindowId) => {
   void loadPeeks().then(async (peeks) => {
+    if (peeks.size === 0 || !(await getSettings()).peekCloseOnBlur) return;
     for (const id of peeks.keys()) {
       if (id !== focusedWindowId) await chrome.windows.remove(id).catch(() => {});
     }

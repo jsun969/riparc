@@ -20,7 +20,7 @@ Ctrl+Tab needs [Karabiner-Elements](https://karabiner-elements.pqrs.org/) (macOS
 Shift+click a link and it opens in a peek: a popup window (no tab strip or address bar) centred over the current window, instead of a new browser window.
 
 - Links clicked inside the peek open in the peek; Shift+click inside it navigates the peek too.
-- The peek closes as soon as it loses focus (click the main window, switch apps) or when you press Esc.
+- Press Esc to close the peek. By default it also closes as soon as it loses focus (click the main window, switch apps); turn that off in settings to keep it open until you close it.
 - To keep the page, press Cmd+O (Ctrl+O elsewhere). It opens as a real tab right after the tab you Shift+clicked from, and the peek closes. The page reloads, so scroll position and unsaved form input are lost.
 - Only links in web pages are peeked. `edge://` / `chrome://` pages, the Web Store, the PDF viewer, and the browser's own UI keep the normal Shift+click.
 
@@ -67,6 +67,7 @@ Open riparc's **Extension options** from its card in the extensions page.
 | Highlight delay (ms) | 300 | How long Ctrl must stay held after the first press before the loop is highlighted (0 to 2000) |
 | Highlight while switching | on | Highlight the loop's tabs while holding Ctrl |
 | Peek on Shift+click | on | Open Shift+clicked links in a peek popup |
+| Close peek on focus loss | on | Close the peek when another window or app takes focus |
 | Open peek as tab | Cmd+O | Shows the current shortcut; click to change it on the browser's shortcut page |
 
 ## Good to know

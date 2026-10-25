@@ -92,7 +92,7 @@ Behaviour history:
 - `peekEnabled` is read from `chrome.storage.sync` in the content script directly (it can't import `settings.ts`); keep its key and default in sync with `DEFAULT_SETTINGS`.
 - Worker: `windows.create({ type: "popup" })` at 85% of the source window, centred. Peeks are tracked as `Map<peekWindowId, { windowId, tabId }>` (source), persisted to `storage.session` under `peeks` as entries.
 - Shift+click inside a peek navigates the peek instead of stacking.
-- `windows.onFocusChanged` closes every peek that isn't the newly focused window (including `WINDOW_ID_NONE`, i.e. app switch).
+- `windows.onFocusChanged` closes every peek that isn't the newly focused window (including `WINDOW_ID_NONE`, i.e. app switch), unless `peekCloseOnBlur` is off. Esc closes regardless.
 - `expand-peek` (Cmd+O): only acts when the command's tab is in a peek. `chrome.tabs.move` can't move tabs out of popup windows, so it `tabs.create`s the URL right after the source tab (wherever it is now, with `openerTabId`), falling back to the source window, then a new window. It focuses that window and removes the peek.
 - `onInstalled` (install/update) injects `peek-content.js` into all open tabs and frames; failures on restricted pages are ignored.
 - Tried and removed: an in-page "Open as tab" button (closed shadow root, popover top layer). It didn't appear for the owner, who asked for the shortcut only.
@@ -105,10 +105,11 @@ Behaviour history:
 | `highlightDelayMs` | 300 | 0 to 2000, step 50 |
 | `highlightWhileSwitching` | true | |
 | `peekEnabled` | true | |
+| `peekCloseOnBlur` | true | |
 
 Stored in `chrome.storage.sync`; numbers are clamped on read and write. The worker reads settings per press. The options page has no secondary labels or descriptions.
 
 ## Known risks
 
 - While the loop highlight shows, Cmd+W closes every selected tab.
-- Peek focus-loss closing could misfire if macOS reports focus out of order, or when a native file dialog opens from a peek (unverified).
+- Peek focus-loss closing could misfire if macOS reports focus out of order, or when a native file dialog opens from a peek (unverified). `peekCloseOnBlur` turns it off.
