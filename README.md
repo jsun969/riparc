@@ -13,26 +13,16 @@ Arc behaviour for Chromium browsers (Chrome, Edge).
 
 The highlight appears once you've held Ctrl for the highlight delay (300 ms by default) or tapped Tab a second time, so quick switches never flash it. Recent-tab history is per window. Clicking a tab outside the loop mid-cycle ends the cycle.
 
-### Why Karabiner
-
-Chromium reserves Ctrl+Tab, so no extension can bind it, and extension shortcuts only fire on key press, never on release. The included [Karabiner-Elements](https://karabiner-elements.pqrs.org/) rule fills both gaps while Chrome or Edge is frontmost:
-
-| You press | Karabiner sends | riparc does |
-|---|---|---|
-| Ctrl+Tab | Ctrl+Q | switches to the next recent tab |
-| Ctrl+Shift+Tab | Ctrl+Shift+W | switches the other way through the loop |
-| release Ctrl | Ctrl+Shift+Q | ends the cycle and clears the highlight (ignored when not cycling) |
-
-Without Karabiner you can press Ctrl+Q directly. riparc never hears Ctrl being released then, so a cycle ends 5 seconds after your last press.
+Ctrl+Tab needs [Karabiner-Elements](https://karabiner-elements.pqrs.org/) (macOS), because the browser doesn't let extensions use Ctrl+Tab or notice Ctrl being released. Without it you can press Ctrl+Q instead; a cycle then ends 5 seconds after your last press.
 
 ## Shift+click: peek
 
-Shift+click a link and it opens in a peek: a popup window (no tab strip or address bar) centred over the current window at 85% of its size, instead of a new browser window.
+Shift+click a link and it opens in a peek: a popup window (no tab strip or address bar) centred over the current window, instead of a new browser window.
 
 - Links clicked inside the peek open in the peek; Shift+click inside it navigates the peek too.
 - The peek closes as soon as it loses focus (click the main window, switch apps) or when you press Esc.
-- Only real links in web pages are peeked. `edge://` / `chrome://` pages, the Web Store, the PDF viewer, and the browser's own UI keep the normal Shift+click.
-- To keep the page, press Cmd+O (Ctrl+O elsewhere). It opens as a real tab right after the tab you Shift+clicked from, and the peek closes. The page reloads in the process (Chromium can't move a tab out of a popup window), so scroll position and unsaved form input are lost.
+- To keep the page, press Cmd+O (Ctrl+O elsewhere). It opens as a real tab right after the tab you Shift+clicked from, and the peek closes. The page reloads, so scroll position and unsaved form input are lost.
+- Only links in web pages are peeked. `edge://` / `chrome://` pages, the Web Store, the PDF viewer, and the browser's own UI keep the normal Shift+click.
 
 ## Setup
 
@@ -45,27 +35,27 @@ Requires Chrome or Edge 121+, Node, [pnpm](https://pnpm.io), and [just](https://
    just build
    ```
 
-2. Load the extension: open `chrome://extensions` (or `edge://extensions`), enable **Developer mode**, click **Load unpacked**, and select `dist/`.
+2. Load the extension: open `chrome://extensions` (or `edge://extensions`), enable **Developer mode**, click **Load unpacked**, and select `dist/`. Accept the request to access all sites; peek needs it to catch Shift+clicks.
 
-3. Check the shortcuts at `chrome://extensions/shortcuts` (or `edge://extensions/shortcuts`). riparc needs all four:
+3. Check the shortcuts at `chrome://extensions/shortcuts` (or `edge://extensions/shortcuts`):
 
-   | Command | Shortcut (macOS) | Elsewhere |
+   | Command | macOS | Elsewhere |
    |---|---|---|
    | Switch to the next most recently used tab | Ctrl+Q | Alt+Q |
    | Switch to the previous most recently used tab | Ctrl+Shift+W | Alt+Shift+W |
    | End the switch (Karabiner sends this on Ctrl release) | Ctrl+Shift+Q | Alt+Shift+Q |
    | Open the peek as a tab | Cmd+O | Ctrl+O |
 
-   The Karabiner rule sends exactly the first three keys, so leave them as they are. The browser always lets you edit extension shortcuts on that page; extensions can't lock them. It also skips a suggested shortcut if another extension already uses it; set it by hand in that case.
+   Leave the first three as they are; the Karabiner rule sends exactly those keys. If a shortcut is empty (another extension already uses it), set it by hand.
 
 4. Add the Karabiner rule (macOS):
 
-   1. `just karabiner` copies [`karabiner/riparc.json`](karabiner/riparc.json) to the clipboard.
+   1. Run `just karabiner` to copy the rule to the clipboard.
    2. In Karabiner-Elements: **Settings → Complex Modifications → Add your own rule**, paste, and save.
 
-   To support another Chromium browser, add its bundle identifier to every `bundle_identifiers` list in the rule.
+   The rule covers Chrome and Edge. For another Chromium browser, add its bundle identifier to every `bundle_identifiers` list in [`karabiner/riparc.json`](karabiner/riparc.json).
 
-After changing the source, run `just build` and click reload on riparc's card in the extensions page.
+To update, pull, run `just build`, and click reload on riparc's card in the extensions page.
 
 ## Settings
 
@@ -79,20 +69,7 @@ Open riparc's **Extension options** from its card in the extensions page.
 | Peek on Shift+click | on | Open Shift+clicked links in a peek popup |
 | Open peek as tab | Cmd+O | Shows the current shortcut; click to change it on the browser's shortcut page |
 
-## Commands
+## Good to know
 
-| Command | Does |
-|---|---|
-| `just install` | Install dependencies |
-| `just build` | Build the unpacked extension into `dist/` |
-| `just watch` | Build, then rebuild TypeScript on change (static files copied once) |
-| `just check` | Type-check |
-| `just zip` | Package `dist/` as `riparc.zip` |
-| `just clean` | Move `dist/` and `riparc.zip` to the trash |
-| `just karabiner` | Copy the Karabiner rule to the clipboard |
-
-## Notes
-
-- The highlight is the browser's multi-select. While it shows, Cmd/Ctrl+W closes every highlighted tab; it collapses back to a single tab when you release Ctrl.
-- History lives in session storage and is rebuilt from the browser's own last-accessed times after a restart.
-- Peek needs access to all sites, since only a script inside the page can catch a Shift+click before the browser opens a new window.
+- While the loop is highlighted, Cmd+W closes every highlighted tab. It's back to a single tab once you release Ctrl.
+- Opening a peek as a tab replaces the browser's own Cmd+O (Open File).
