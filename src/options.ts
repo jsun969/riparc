@@ -26,3 +26,12 @@ for (const input of document.querySelectorAll<HTMLInputElement>("input[data-sett
     input.value = String(await setNumberSetting(key, input.valueAsNumber));
   });
 }
+
+// Extension shortcuts can only be changed on the browser's own shortcut page.
+const expandButton = document.querySelector<HTMLButtonElement>("#expand-peek-shortcut")!;
+const commands = await chrome.commands.getAll();
+expandButton.textContent = commands.find((c) => c.name === "expand-peek")?.shortcut || "Not set";
+expandButton.addEventListener("click", () => {
+  const scheme = navigator.userAgent.includes(" Edg/") ? "edge" : "chrome";
+  void chrome.tabs.create({ url: `${scheme}://extensions/shortcuts` });
+});

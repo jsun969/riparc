@@ -1,22 +1,29 @@
 // Peek: Shift+click on a link opens it in a temporary popup window centred over
 // the current window. The popup closes as soon as it loses focus, or on Esc.
+// Cmd+O reopens the page as a real tab next to the tab the peek came from.
 
 const PEEKS_KEY = "peeks";
 // Peek size relative to the window it was opened from.
 const PEEK_SCALE = 0.85;
 
-// Open peek window ids, mirrored to storage.session so a restarted service
-// worker still knows which windows to close.
-let peeksLoad: Promise<Set<number>> | undefined;
+// Where a peek was opened from, so expanding it lands next to that tab.
+interface PeekSource {
+  windowId: number;
+  tabId: number | undefined;
+}
 
-function loadPeeks(): Promise<Set<number>> {
+// Open peek window id -> source, mirrored to storage.session so a restarted
+// service worker still knows which windows are peeks.
+let peeksLoad: Promise<Map<number, PeekSource>> | undefined;
+
+function loadPeeks(): Promise<Map<number, PeekSource>> {
   peeksLoad ??= chrome.storage.session
     .get(PEEKS_KEY)
-    .then((items) => new Set((items[PEEKS_KEY] as number[] | undefined) ?? []));
+    .then((items) => new Map((items[PEEKS_KEY] as [number, PeekSource][] | undefined) ?? []));
   return peeksLoad;
 }
 
-async function savePeeks(peeks: Set<number>): Promise<void> {
+async function savePeeks(peeks: Map<number, PeekSource>): Promise<void> {
   await chrome.storage.session.set({ [PEEKS_KEY]: [...peeks] });
 }
 
@@ -44,8 +51,38 @@ async function openPeek(url: string, sender: chrome.tabs.Tab): Promise<void> {
     top: originTop + Math.round((originHeight - height) / 2),
   });
   if (peek?.id === undefined) return;
-  peeks.add(peek.id);
+  peeks.set(peek.id, { windowId: sender.windowId, tabId: sender.id });
   await savePeeks(peeks);
+}
+
+// Chromium can't move a tab out of a popup window, so the page is opened fresh
+// in a normal tab and the peek is closed.
+async function expandPeek(peekTab: chrome.tabs.Tab): Promise<void> {
+  const source = (await loadPeeks()).get(peekTab.windowId);
+  const url = peekTab.url;
+  if (!source || !url) return;
+  const sourceTab =
+    source.tabId === undefined ? undefined : await chrome.tabs.get(source.tabId).catch(() => undefined);
+  let tab: chrome.tabs.Tab | undefined;
+  if (sourceTab) {
+    // The source tab may have moved, so use where it is now.
+    tab = await chrome.tabs.create({
+      windowId: sourceTab.windowId,
+      index: sourceTab.index + 1,
+      openerTabId: sourceTab.id,
+      url,
+    });
+  } else {
+    tab = await chrome.tabs.create({ windowId: source.windowId, url }).catch(() => undefined);
+  }
+  if (tab) {
+    await chrome.windows.update(tab.windowId, { focused: true });
+  } else {
+    // The source window is gone too.
+    await chrome.windows.create({ url, focused: true });
+  }
+  // Focusing another window usually closes the peek already.
+  await chrome.windows.remove(peekTab.windowId).catch(() => {});
 }
 
 chrome.runtime.onMessage.addListener((message: unknown, sender) => {
@@ -61,9 +98,16 @@ chrome.runtime.onMessage.addListener((message: unknown, sender) => {
   }
 });
 
+chrome.commands.onCommand.addListener((command, tab) => {
+  if (command !== "expand-peek" || !tab) return;
+  void loadPeeks().then((peeks) => {
+    if (peeks.has(tab.windowId)) return expandPeek(tab);
+  });
+});
+
 chrome.windows.onFocusChanged.addListener((focusedWindowId) => {
   void loadPeeks().then(async (peeks) => {
-    for (const id of peeks) {
+    for (const id of peeks.keys()) {
       if (id !== focusedWindowId) await chrome.windows.remove(id).catch(() => {});
     }
   });

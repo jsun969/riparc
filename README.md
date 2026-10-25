@@ -32,6 +32,7 @@ Shift+click a link and it opens in a peek: a popup window (no tab strip or addre
 - Links clicked inside the peek open in the peek; Shift+click inside it navigates the peek too.
 - The peek closes as soon as it loses focus (click the main window, switch apps) or when you press Esc.
 - Only real links in web pages are peeked. `edge://` / `chrome://` pages, the Web Store, the PDF viewer, and the browser's own UI keep the normal Shift+click.
+- To keep the page, press Cmd+O (Ctrl+O elsewhere). It opens as a real tab right after the tab you Shift+clicked from, and the peek closes. The page reloads in the process (Chromium can't move a tab out of a popup window), so scroll position and unsaved form input are lost.
 
 ## Setup
 
@@ -46,15 +47,16 @@ Requires Chrome or Edge 121+, Node, [pnpm](https://pnpm.io), and [just](https://
 
 2. Load the extension: open `chrome://extensions` (or `edge://extensions`), enable **Developer mode**, click **Load unpacked**, and select `dist/`.
 
-3. Check the shortcuts at `chrome://extensions/shortcuts` (or `edge://extensions/shortcuts`). riparc needs all three:
+3. Check the shortcuts at `chrome://extensions/shortcuts` (or `edge://extensions/shortcuts`). riparc needs all four:
 
    | Command | Shortcut (macOS) | Elsewhere |
    |---|---|---|
    | Switch to the next most recently used tab | Ctrl+Q | Alt+Q |
    | Switch to the previous most recently used tab | Ctrl+Shift+W | Alt+Shift+W |
    | End the switch (Karabiner sends this on Ctrl release) | Ctrl+Shift+Q | Alt+Shift+Q |
+   | Open the peek as a tab | Cmd+O | Ctrl+O |
 
-   The Karabiner rule sends exactly these keys, so leave them as they are. The browser always lets you edit extension shortcuts on that page; extensions can't lock them. It also skips a suggested shortcut if another extension already uses it; set it by hand in that case.
+   The Karabiner rule sends exactly the first three keys, so leave them as they are. The browser always lets you edit extension shortcuts on that page; extensions can't lock them. It also skips a suggested shortcut if another extension already uses it; set it by hand in that case.
 
 4. Add the Karabiner rule (macOS):
 
@@ -75,6 +77,7 @@ Open riparc's **Extension options** from its card in the extensions page.
 | Highlight delay (ms) | 300 | How long Ctrl must stay held after the first press before the loop is highlighted (0 to 2000) |
 | Highlight while switching | on | Highlight the loop's tabs while holding Ctrl |
 | Peek on Shift+click | on | Open Shift+clicked links in a peek popup |
+| Open peek as tab | Cmd+O | Shows the current shortcut; click to change it on the browser's shortcut page |
 
 ## Commands
 

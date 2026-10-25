@@ -43,6 +43,13 @@
         "mac": "MacCtrl+Shift+Q"
       },
       "description": "End the switch (Karabiner sends this on Ctrl release)"
+    },
+    "expand-peek": {
+      "suggested_key": {
+        "default": "Ctrl+O",
+        "mac": "Command+O"
+      },
+      "description": "Open the peek as a tab"
     }
   }
 }
