@@ -6,9 +6,13 @@ export interface Settings {
   highlightDelayMs: number;
   // Show every tab in the loop as selected while holding Ctrl.
   highlightWhileSwitching: boolean;
+  // Shift+click on a link opens it in a peek popup instead of a new window.
+  // peek-content.ts reads this key directly; keep the name and default in sync.
+  peekEnabled: boolean;
 }
 
 export type NumberSettingKey = "cycleSize" | "highlightDelayMs";
+export type BooleanSettingKey = "highlightWhileSwitching" | "peekEnabled";
 
 export interface NumberBounds {
   min: number;
@@ -20,6 +24,7 @@ export const DEFAULT_SETTINGS: Settings = {
   cycleSize: 5,
   highlightDelayMs: 300,
   highlightWhileSwitching: true,
+  peekEnabled: true,
 };
 
 export const NUMBER_BOUNDS: Record<NumberSettingKey, NumberBounds> = {
@@ -40,6 +45,7 @@ export async function getSettings(): Promise<Settings> {
     cycleSize: clamp("cycleSize", stored.cycleSize),
     highlightDelayMs: clamp("highlightDelayMs", stored.highlightDelayMs),
     highlightWhileSwitching: Boolean(stored.highlightWhileSwitching),
+    peekEnabled: Boolean(stored.peekEnabled),
   };
 }
 
@@ -50,6 +56,6 @@ export async function setNumberSetting(key: NumberSettingKey, value: number): Pr
   return clamped;
 }
 
-export async function setHighlightWhileSwitching(enabled: boolean): Promise<void> {
-  await chrome.storage.sync.set({ highlightWhileSwitching: enabled });
+export async function setBooleanSetting(key: BooleanSettingKey, value: boolean): Promise<void> {
+  await chrome.storage.sync.set({ [key]: value });
 }

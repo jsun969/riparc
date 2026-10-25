@@ -1,4 +1,5 @@
 import { getSettings } from "./settings.js";
+import "./peek.js";
 
 const CYCLE_COMMAND = "cycle-recent-tab";
 const CYCLE_REVERSE_COMMAND = "cycle-recent-tab-reverse";

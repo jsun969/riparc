@@ -2,7 +2,9 @@
 
 Arc behaviour for Chromium browsers (Chrome, Edge).
 
-Currently one feature: **Ctrl+Tab switches between your most recently used tabs**, like Alt+Tab on Windows, instead of walking the tab strip left to right.
+## Ctrl+Tab: recent tabs
+
+**Ctrl+Tab switches between your most recently used tabs**, like Alt+Tab on Windows, instead of walking the tab strip left to right.
 
 - Quick Ctrl+Tab (press and release): switch straight to the previous tab. Do it again to jump back.
 - Hold Ctrl and keep tapping Tab: each tap switches to the next recent tab (5 by default), wrapping back to where you started. While you hold, every tab in that loop is highlighted in the tab strip.
@@ -11,7 +13,7 @@ Currently one feature: **Ctrl+Tab switches between your most recently used tabs*
 
 The highlight appears once you've held Ctrl for the highlight delay (300 ms by default) or tapped Tab a second time, so quick switches never flash it. Recent-tab history is per window. Clicking a tab outside the loop mid-cycle ends the cycle.
 
-## Why Karabiner
+### Why Karabiner
 
 Chromium reserves Ctrl+Tab, so no extension can bind it, and extension shortcuts only fire on key press, never on release. The included [Karabiner-Elements](https://karabiner-elements.pqrs.org/) rule fills both gaps while Chrome or Edge is frontmost:
 
@@ -22,6 +24,14 @@ Chromium reserves Ctrl+Tab, so no extension can bind it, and extension shortcuts
 | release Ctrl | Ctrl+Shift+Q | ends the cycle and clears the highlight (ignored when not cycling) |
 
 Without Karabiner you can press Ctrl+Q directly. riparc never hears Ctrl being released then, so a cycle ends 5 seconds after your last press.
+
+## Shift+click: peek
+
+Shift+click a link and it opens in a peek: a popup window (no tab strip or address bar) centred over the current window at 85% of its size, instead of a new browser window.
+
+- Links clicked inside the peek open in the peek; Shift+click inside it navigates the peek too.
+- The peek closes as soon as it loses focus (click the main window, switch apps) or when you press Esc.
+- Only real links in web pages are peeked. `edge://` / `chrome://` pages, the Web Store, the PDF viewer, and the browser's own UI keep the normal Shift+click.
 
 ## Setup
 
@@ -64,6 +74,7 @@ Open riparc's **Extension options** from its card in the extensions page.
 | Tabs to cycle | 5 | How many recent tabs one cycle loops through (2 to 20) |
 | Highlight delay (ms) | 300 | How long Ctrl must stay held after the first press before the loop is highlighted (0 to 2000) |
 | Highlight while switching | on | Highlight the loop's tabs while holding Ctrl |
+| Peek on Shift+click | on | Open Shift+clicked links in a peek popup |
 
 ## Commands
 
@@ -81,3 +92,4 @@ Open riparc's **Extension options** from its card in the extensions page.
 
 - The highlight is the browser's multi-select. While it shows, Cmd/Ctrl+W closes every highlighted tab; it collapses back to a single tab when you release Ctrl.
 - History lives in session storage and is rebuilt from the browser's own last-accessed times after a restart.
+- Peek needs access to all sites, since only a script inside the page can catch a Shift+click before the browser opens a new window.
